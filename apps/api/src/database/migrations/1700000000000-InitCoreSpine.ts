@@ -1,4 +1,5 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
+import { createTenantScopedTable } from "../migration-helpers";
 
 /**
  * Foundation migration (§9 build sequence, §11 schema conventions):
@@ -38,7 +39,7 @@ export class InitCoreSpine1700000000000 implements MigrationInterface {
     `);
 
     // ---- platform.branches ----
-    await this.createTenantScopedTable(queryRunner, "platform", "branches", `
+    await createTenantScopedTable(queryRunner, "platform", "branches", `
       name varchar NOT NULL,
       address varchar,
       is_primary boolean NOT NULL DEFAULT false
@@ -49,7 +50,7 @@ export class InitCoreSpine1700000000000 implements MigrationInterface {
     `);
 
     // ---- core.users ----
-    await this.createTenantScopedTable(queryRunner, "core", "users", `
+    await createTenantScopedTable(queryRunner, "core", "users", `
       branch_id uuid,
       name varchar NOT NULL,
       email varchar NOT NULL,
@@ -65,7 +66,7 @@ export class InitCoreSpine1700000000000 implements MigrationInterface {
     await queryRunner.query(`CREATE UNIQUE INDEX idx_users_tenant_email ON core.users (tenant_id, email)`);
 
     // ---- core.roles ----
-    await this.createTenantScopedTable(queryRunner, "core", "roles", `
+    await createTenantScopedTable(queryRunner, "core", "roles", `
       key varchar NOT NULL,
       name varchar NOT NULL
     `);
@@ -87,7 +88,7 @@ export class InitCoreSpine1700000000000 implements MigrationInterface {
     await queryRunner.query(`CREATE UNIQUE INDEX idx_permissions_module_action ON core.permissions (module, action)`);
 
     // ---- core.role_permissions ----
-    await this.createTenantScopedTable(queryRunner, "core", "role_permissions", `
+    await createTenantScopedTable(queryRunner, "core", "role_permissions", `
       role_id uuid NOT NULL,
       permission_id uuid NOT NULL
     `);
@@ -102,7 +103,7 @@ export class InitCoreSpine1700000000000 implements MigrationInterface {
     `);
 
     // ---- core.user_roles ----
-    await this.createTenantScopedTable(queryRunner, "core", "user_roles", `
+    await createTenantScopedTable(queryRunner, "core", "user_roles", `
       user_id uuid NOT NULL,
       role_id uuid NOT NULL
     `);
@@ -117,7 +118,7 @@ export class InitCoreSpine1700000000000 implements MigrationInterface {
     `);
 
     // ---- core.patients ----
-    await this.createTenantScopedTable(queryRunner, "core", "patients", `
+    await createTenantScopedTable(queryRunner, "core", "patients", `
       branch_id uuid,
       mrn varchar NOT NULL,
       name varchar NOT NULL,
@@ -146,39 +147,5 @@ export class InitCoreSpine1700000000000 implements MigrationInterface {
     for (const schema of ["records", "hr", "billing", "lab", "pharmacy", "clinical", "core", "platform"]) {
       await queryRunner.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
     }
-  }
-
-  /**
-   * Every tenant-owned table is built the same way: UUID PK, tenant_id +
-   * full audit columns (§11), a leading tenant_id index, RLS enabled, and
-   * one policy checking `app.tenant_id` — the exact mechanism
-   * TenantInterceptor and AuthService.login populate per request/login.
-   */
-  private async createTenantScopedTable(
-    queryRunner: QueryRunner,
-    schema: string,
-    table: string,
-    moduleColumnsSql: string,
-  ): Promise<void> {
-    const qualified = `${schema}.${table}`;
-    await queryRunner.query(`
-      CREATE TABLE ${qualified} (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        tenant_id uuid NOT NULL,
-        ${moduleColumnsSql},
-        created_at timestamptz NOT NULL DEFAULT now(),
-        updated_at timestamptz NOT NULL DEFAULT now(),
-        created_by uuid,
-        updated_by uuid,
-        deleted_at timestamptz
-      )
-    `);
-    await queryRunner.query(`CREATE INDEX idx_${schema}_${table}_tenant ON ${qualified} (tenant_id)`);
-    await queryRunner.query(`ALTER TABLE ${qualified} ENABLE ROW LEVEL SECURITY`);
-    await queryRunner.query(`
-      CREATE POLICY tenant_isolation ON ${qualified}
-        USING (tenant_id = current_setting('app.tenant_id', true)::uuid)
-        WITH CHECK (tenant_id = current_setting('app.tenant_id', true)::uuid)
-    `);
   }
 }

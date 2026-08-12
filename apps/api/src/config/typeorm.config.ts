@@ -8,8 +8,29 @@ import { Permission } from "../modules/core/entities/permission.entity";
 import { RolePermission } from "../modules/core/entities/role-permission.entity";
 import { UserRole } from "../modules/core/entities/user-role.entity";
 import { Patient } from "../modules/core/entities/patient.entity";
+import { Appointment } from "../modules/clinical/entities/appointment.entity";
+import { Encounter } from "../modules/clinical/entities/encounter.entity";
+import { ClinicalNote } from "../modules/clinical/entities/clinical-note.entity";
+import { Ward } from "../modules/clinical/entities/ward.entity";
+import { Bed } from "../modules/clinical/entities/bed.entity";
+import { Admission } from "../modules/clinical/entities/admission.entity";
 
-export const entities = [Tenant, Branch, User, Role, Permission, RolePermission, UserRole, Patient];
+export const entities = [
+  Tenant,
+  Branch,
+  User,
+  Role,
+  Permission,
+  RolePermission,
+  UserRole,
+  Patient,
+  Appointment,
+  Encounter,
+  ClinicalNote,
+  Ward,
+  Bed,
+  Admission,
+];
 
 export function typeOrmConfig(config: ConfigService): TypeOrmModuleOptions {
   return {

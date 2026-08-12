@@ -8,11 +8,13 @@ import { UserRole } from "./entities/user-role.entity";
 import { Patient } from "./entities/patient.entity";
 import { PatientsController } from "./patients/patients.controller";
 import { PatientsService } from "./patients/patients.service";
+import { UsersController } from "./users/users.controller";
+import { UsersService } from "./users/users.service";
 
 @Module({
   imports: [TypeOrmModule.forFeature([User, Role, Permission, RolePermission, UserRole, Patient])],
-  controllers: [PatientsController],
-  providers: [PatientsService],
+  controllers: [PatientsController, UsersController],
+  providers: [PatientsService, UsersService],
   exports: [TypeOrmModule],
 })
 export class CoreModule {}

@@ -56,11 +56,20 @@ pnpm dev:web     # http://localhost:5173
 
 ## What's implemented vs. scaffolded
 
-This is the **foundation** step of the build order (architecture plan §9):
-Tenant, Branch, Auth/RBAC, and Patient Registry are fully wired end to end
-(migration → RLS → API → login → list/create UI). The remaining modules in
-the catalog (`packages/shared/src/modules.ts`) are planned and will be
-added the same way — new schema, new entities extending
+Two steps of the build order (architecture plan §9) are done, end to end
+(migration → RLS → API → UI):
+
+- **Foundation**: Tenant, Branch, Auth/RBAC, Patient Registry.
+- **Clinical core**: Appointments (booking + check-in) → Encounters (the
+  Visit spine entity from §11) → EHR clinical notes (vitals/diagnosis/
+  prescription, charted per encounter) → IPD bed management (wards, beds,
+  admit/discharge with a DB-level guarantee that a bed can't be
+  double-booked).
+
+The remaining modules in the catalog (`packages/shared/src/modules.ts`) —
+Pharmacy, Lab & Radiology, Blood Bank, Billing & Finance, Insurance/TPA,
+HR & Payroll, Ambulance, Referral, Birth & Death Record — are planned and
+get added the same way: new schema, new entities extending
 `TenantScopedEntity`, new permission rows, new nav entry (automatic, since
 nav is generated from the catalog) — without touching what's already here.
 See §11 of the architecture plan for the extension mechanism this relies
@@ -74,6 +83,16 @@ on (companion tables, never altering an existing module's tables).
   per authenticated request; **service code must read/write through
   `tenantManager()`** (`common/tenant/tenant-context.ts`), not
   `@InjectRepository`, or RLS silently returns nothing.
+- Every tenant-scoped table is created with both `ENABLE ROW LEVEL
+  SECURITY` and `FORCE ROW LEVEL SECURITY` (`database/migration-helpers.ts`).
+  The `FORCE` matters: Postgres exempts a table's *owner* from RLS by
+  default, and the role that runs migrations owns every table it creates —
+  without `FORCE`, RLS would silently do nothing whenever the app connects
+  as that same role. Verified directly against Postgres during scaffolding:
+  a query with no `app.tenant_id` set returns zero rows even for the table
+  owner; run as a Postgres superuser is the one case that still bypasses
+  RLS entirely, which is expected and why the app's runtime role should
+  never be a superuser in any real environment.
 - `LoginDto.tenantId` is client-supplied for now — production auth should
   resolve the tenant from the request's subdomain/host before this DTO is
   ever built. Flagged in `auth/dto/login.dto.ts`.

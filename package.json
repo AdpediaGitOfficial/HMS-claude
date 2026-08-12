@@ -14,5 +14,8 @@
     "typecheck": "pnpm -r typecheck",
     "migration:run": "pnpm --filter @hms/api migration:run",
     "migration:generate": "pnpm --filter @hms/api migration:generate"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["bcrypt", "@nestjs/core", "esbuild"]
   }
 }
