@@ -131,6 +131,15 @@ export function EncounterDetailPage() {
     navigate(encounter?.type === "ipd" ? "/ipd" : "/opd");
   }
 
+  async function onGenerateInvoice() {
+    if (!encounterId || !encounter) return;
+    const invoice = await api<{ id: string }>("/billing/invoices", {
+      method: "POST",
+      body: JSON.stringify({ encounterId, patientId: encounter.patientId }),
+    });
+    navigate(`/billing/${invoice.id}`);
+  }
+
   if (loading || !encounter) return <p className="text-text-muted">Loading…</p>;
 
   return (
@@ -149,11 +158,16 @@ export function EncounterDetailPage() {
             {new Date(encounter.startedAt).toLocaleString()}
           </div>
         </div>
-        {encounter.status === "in_progress" && (
-          <Button variant="danger" onClick={onCloseEncounter}>
-            Close encounter
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={onGenerateInvoice}>
+            Generate invoice
           </Button>
-        )}
+          {encounter.status === "in_progress" && (
+            <Button variant="danger" onClick={onCloseEncounter}>
+              Close encounter
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="rounded-lg border border-border bg-surface p-5 shadow-card">

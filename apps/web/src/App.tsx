@@ -12,6 +12,9 @@ import { IpdPage } from "@/pages/IpdPage";
 import { PharmacyPage } from "@/pages/PharmacyPage";
 import { LabPage } from "@/pages/LabPage";
 import { BloodBankPage } from "@/pages/BloodBankPage";
+import { BillingPage } from "@/pages/BillingPage";
+import { InvoiceDetailPage } from "@/pages/InvoiceDetailPage";
+import { InsuranceClaimsPage } from "@/pages/InsuranceClaimsPage";
 
 function RequireAuth({ children }: { children: React.ReactElement }) {
   const { isAuthenticated } = useAuth();
@@ -67,6 +70,15 @@ function AppRoutes() {
 
       <Route path="/blood_bank" element={<Section title="Blood Bank" crumb="Home / Blood Bank" />}>
         <Route index element={<BloodBankPage />} />
+      </Route>
+
+      <Route path="/billing" element={<Section title="Billing & Finance" crumb="Home / Billing & Finance" />}>
+        <Route index element={<BillingPage />} />
+        <Route path=":invoiceId" element={<InvoiceDetailPage />} />
+      </Route>
+
+      <Route path="/insurance_tpa" element={<Section title="Insurance / TPA Claims" crumb="Home / Insurance / TPA Claims" />}>
+        <Route index element={<InsuranceClaimsPage />} />
       </Route>
     </Routes>
   );

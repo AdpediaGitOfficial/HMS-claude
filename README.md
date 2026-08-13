@@ -72,15 +72,20 @@ Two steps of the build order (architecture plan §9) are done, end to end
   (inventory by type + issue-to-patient). A doctor places orders directly
   from the EHR encounter screen; they show up in the relevant module's
   queue.
+- **Financial modules**: Billing & Finance (generate an invoice from an
+  encounter → add line items → issue → record payments, with the invoice
+  status derived automatically from payments received: `draft` →
+  `issued` → `partially_paid`/`paid`) and Insurance/TPA Claims (submit a
+  claim against an issued invoice, then approve/reject/settle from a
+  dedicated worklist).
 
 The remaining modules in the catalog (`packages/shared/src/modules.ts`) —
-Billing & Finance, Insurance/TPA, HR & Payroll, Ambulance, Referral,
-Birth & Death Record — are planned and get added the same way: new schema,
-new entities extending `TenantScopedEntity`, new permission rows, new nav
-entry (automatic, since nav is generated from the catalog) — without
-touching what's already here. See §11 of the architecture plan for the
-extension mechanism this relies on (companion tables, never altering an
-existing module's tables).
+HR & Payroll, Ambulance, Referral, Birth & Death Record — are planned and
+get added the same way: new schema, new entities extending
+`TenantScopedEntity`, new permission rows, new nav entry (automatic, since
+nav is generated from the catalog) — without touching what's already here.
+See §11 of the architecture plan for the extension mechanism this relies
+on (companion tables, never altering an existing module's tables).
 
 ## Multi-tenancy & security notes
 

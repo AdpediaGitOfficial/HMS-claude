@@ -47,6 +47,14 @@ const PERMISSIONS: Array<{ module: string; action: string; description: string }
   { module: "records", action: "blood_bank.read", description: "View blood bank inventory" },
   { module: "records", action: "blood_bank.create", description: "Add a blood unit" },
   { module: "records", action: "blood_bank.issue", description: "Issue a blood unit to a patient" },
+  { module: "billing", action: "invoices.read", description: "View invoices" },
+  { module: "billing", action: "invoices.create", description: "Generate an invoice" },
+  { module: "billing", action: "invoices.update", description: "Add line items / issue an invoice" },
+  { module: "billing", action: "payments.read", description: "View payments" },
+  { module: "billing", action: "payments.create", description: "Record a payment" },
+  { module: "billing", action: "tpa_claims.read", description: "View insurance/TPA claims" },
+  { module: "billing", action: "tpa_claims.create", description: "Submit an insurance/TPA claim" },
+  { module: "billing", action: "tpa_claims.update", description: "Approve/reject/settle a claim" },
 ];
 
 async function main() {

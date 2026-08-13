@@ -20,6 +20,10 @@ import { DispenseRecord } from "../modules/pharmacy/entities/dispense-record.ent
 import { TestCatalog } from "../modules/lab/entities/test-catalog.entity";
 import { TestResult } from "../modules/lab/entities/test-result.entity";
 import { BloodUnit } from "../modules/records/entities/blood-unit.entity";
+import { Invoice } from "../modules/billing/entities/invoice.entity";
+import { InvoiceLine } from "../modules/billing/entities/invoice-line.entity";
+import { Payment } from "../modules/billing/entities/payment.entity";
+import { TpaClaim } from "../modules/billing/entities/tpa-claim.entity";
 
 export const entities = [
   Tenant,
@@ -42,6 +46,10 @@ export const entities = [
   TestCatalog,
   TestResult,
   BloodUnit,
+  Invoice,
+  InvoiceLine,
+  Payment,
+  TpaClaim,
 ];
 
 export function typeOrmConfig(config: ConfigService): TypeOrmModuleOptions {

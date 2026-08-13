@@ -10,6 +10,7 @@ import { ClinicalModule } from "./modules/clinical/clinical.module";
 import { PharmacyModule } from "./modules/pharmacy/pharmacy.module";
 import { LabModule } from "./modules/lab/lab.module";
 import { BloodBankModule } from "./modules/records/blood-bank.module";
+import { BillingModule } from "./modules/billing/billing.module";
 import { AuthModule } from "./modules/auth/auth.module";
 
 @Module({
@@ -26,6 +27,7 @@ import { AuthModule } from "./modules/auth/auth.module";
     PharmacyModule,
     LabModule,
     BloodBankModule,
+    BillingModule,
     AuthModule,
   ],
   providers: [{ provide: APP_INTERCEPTOR, useClass: TenantInterceptor }],
