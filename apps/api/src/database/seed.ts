@@ -13,6 +13,8 @@ import { Bed } from "../modules/clinical/entities/bed.entity";
 import { StockItem } from "../modules/pharmacy/entities/stock-item.entity";
 import { TestCatalog } from "../modules/lab/entities/test-catalog.entity";
 import { BloodUnit } from "../modules/records/entities/blood-unit.entity";
+import { EmployeeDetail } from "../modules/hr/entities/employee-detail.entity";
+import { Ambulance } from "../modules/records/entities/ambulance.entity";
 
 /**
  * Seeds one demo tenant end-to-end (tenant → branch → permission catalog →
@@ -55,6 +57,23 @@ const PERMISSIONS: Array<{ module: string; action: string; description: string }
   { module: "billing", action: "tpa_claims.read", description: "View insurance/TPA claims" },
   { module: "billing", action: "tpa_claims.create", description: "Submit an insurance/TPA claim" },
   { module: "billing", action: "tpa_claims.update", description: "Approve/reject/settle a claim" },
+  { module: "reports", action: "summary.read", description: "View the reports dashboard" },
+  { module: "reports", action: "audit.read", description: "View the audit log" },
+  { module: "hr", action: "employees.read", description: "View staff/employee records" },
+  { module: "hr", action: "employees.create", description: "Add an employee record" },
+  { module: "hr", action: "attendance.read", description: "View attendance" },
+  { module: "hr", action: "attendance.mark", description: "Mark attendance" },
+  { module: "hr", action: "payroll.read", description: "View payroll runs and payslips" },
+  { module: "hr", action: "payroll.create", description: "Create a payroll run" },
+  { module: "hr", action: "payroll.process", description: "Process a payroll run" },
+  { module: "records", action: "ambulance.read", description: "View ambulance fleet and trips" },
+  { module: "records", action: "ambulance.create", description: "Add a vehicle to the fleet" },
+  { module: "records", action: "ambulance.dispatch", description: "Dispatch/complete a trip" },
+  { module: "records", action: "referrals.read", description: "View referrals" },
+  { module: "records", action: "referrals.create", description: "Submit a referral" },
+  { module: "records", action: "referrals.update", description: "Accept/complete a referral" },
+  { module: "records", action: "vital_records.read", description: "View birth/death registers" },
+  { module: "records", action: "vital_records.create", description: "Register a birth or death" },
 ];
 
 async function main() {
@@ -216,6 +235,36 @@ async function main() {
           );
         }
       }
+    }
+
+    // HR record for the admin user, and one ambulance, so those pages
+    // aren't empty on first login either.
+    const employeeRepo = manager.getRepository(EmployeeDetail);
+    const hasEmployee = await employeeRepo.findOne({ where: { tenantId: tenant.id, userId: adminUser.id } });
+    if (!hasEmployee) {
+      await employeeRepo.save(
+        employeeRepo.create({
+          tenantId: tenant.id,
+          userId: adminUser.id,
+          designation: "Hospital Administrator",
+          department: "Administration",
+          dateOfJoining: "2024-01-01",
+          monthlySalary: "60000.00",
+        }),
+      );
+    }
+
+    const ambulanceRepo = manager.getRepository(Ambulance);
+    const hasAmbulance = await ambulanceRepo.findOne({ where: { tenantId: tenant.id, vehicleNumber: "KA-01-AB-1234" } });
+    if (!hasAmbulance) {
+      await ambulanceRepo.save(
+        ambulanceRepo.create({
+          tenantId: tenant.id,
+          vehicleNumber: "KA-01-AB-1234",
+          driverName: "Suresh Kumar",
+          status: "available",
+        }),
+      );
     }
 
     // eslint-disable-next-line no-console

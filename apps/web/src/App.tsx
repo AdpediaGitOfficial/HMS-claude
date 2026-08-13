@@ -15,6 +15,11 @@ import { BloodBankPage } from "@/pages/BloodBankPage";
 import { BillingPage } from "@/pages/BillingPage";
 import { InvoiceDetailPage } from "@/pages/InvoiceDetailPage";
 import { InsuranceClaimsPage } from "@/pages/InsuranceClaimsPage";
+import { HrPage } from "@/pages/HrPage";
+import { AmbulancePage } from "@/pages/AmbulancePage";
+import { ReferralPage } from "@/pages/ReferralPage";
+import { BirthDeathPage } from "@/pages/BirthDeathPage";
+import { ReportsPage } from "@/pages/ReportsPage";
 
 function RequireAuth({ children }: { children: React.ReactElement }) {
   const { isAuthenticated } = useAuth();
@@ -79,6 +84,26 @@ function AppRoutes() {
 
       <Route path="/insurance_tpa" element={<Section title="Insurance / TPA Claims" crumb="Home / Insurance / TPA Claims" />}>
         <Route index element={<InsuranceClaimsPage />} />
+      </Route>
+
+      <Route path="/hr_payroll" element={<Section title="Human Resource" crumb="Home / Human Resource" />}>
+        <Route index element={<HrPage />} />
+      </Route>
+
+      <Route path="/ambulance" element={<Section title="Ambulance" crumb="Home / Ambulance" />}>
+        <Route index element={<AmbulancePage />} />
+      </Route>
+
+      <Route path="/referral" element={<Section title="Referral" crumb="Home / Referral" />}>
+        <Route index element={<ReferralPage />} />
+      </Route>
+
+      <Route path="/birth_death" element={<Section title="Birth & Death Record" crumb="Home / Birth & Death Record" />}>
+        <Route index element={<BirthDeathPage />} />
+      </Route>
+
+      <Route path="/reports" element={<Section title="Reports" crumb="Home / Reports" />}>
+        <Route index element={<ReportsPage />} />
       </Route>
     </Routes>
   );

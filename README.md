@@ -54,10 +54,11 @@ pnpm dev:api     # http://localhost:3000
 pnpm dev:web     # http://localhost:5173
 ```
 
-## What's implemented vs. scaffolded
+## What's implemented
 
-Two steps of the build order (architecture plan §9) are done, end to end
-(migration → RLS → API → UI):
+All five steps of the build order (architecture plan §9) are done, end to
+end (migration → RLS → API → UI), covering every module in the catalog
+(`packages/shared/src/modules.ts`):
 
 - **Foundation**: Tenant, Branch, Auth/RBAC, Patient Registry.
 - **Clinical core**: Appointments (booking + check-in) → Encounters (the
@@ -78,14 +79,27 @@ Two steps of the build order (architecture plan §9) are done, end to end
   `issued` → `partially_paid`/`paid`) and Insurance/TPA Claims (submit a
   claim against an issued invoice, then approve/reject/settle from a
   dedicated worklist).
+- **Org & records modules**: Reports & Audit (a cross-module summary read
+  from every module above, plus an append-only audit log written
+  automatically by `TenantInterceptor` for every mutating request — no
+  module has to remember to log itself), HR & Payroll (employee records,
+  daily attendance, payroll runs that generate one payslip per employee),
+  Ambulance (fleet + dispatch, with a guard against double-dispatching a
+  vehicle already on a trip), Referral (pending → accepted → completed),
+  Birth & Death Record (statutory registers).
 
-The remaining modules in the catalog (`packages/shared/src/modules.ts`) —
-HR & Payroll, Ambulance, Referral, Birth & Death Record — are planned and
-get added the same way: new schema, new entities extending
-`TenantScopedEntity`, new permission rows, new nav entry (automatic, since
-nav is generated from the catalog) — without touching what's already here.
-See §11 of the architecture plan for the extension mechanism this relies
-on (companion tables, never altering an existing module's tables).
+Every module followed the same extension mechanism from §11: new Postgres
+schema/tables via an additive migration, entities extending
+`TenantScopedEntity`, new permission rows in the seed, and a new nav entry
+that appears automatically since the sidebar is generated from
+`packages/shared/src/modules.ts` — nothing earlier ever had to change for a
+later module to exist.
+
+Not built: multi-branch UI (the `Branch` entity exists in the schema per
+§11 but there's no UI for managing multiple branches yet), and RBAC is
+currently coarse — every seeded demo user holds the `admin` role rather
+than the fine-grained role → permission subsets described in §5 of the
+architecture plan.
 
 ## Multi-tenancy & security notes
 

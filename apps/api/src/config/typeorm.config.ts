@@ -24,6 +24,16 @@ import { Invoice } from "../modules/billing/entities/invoice.entity";
 import { InvoiceLine } from "../modules/billing/entities/invoice-line.entity";
 import { Payment } from "../modules/billing/entities/payment.entity";
 import { TpaClaim } from "../modules/billing/entities/tpa-claim.entity";
+import { AuditLog } from "../modules/core/entities/audit-log.entity";
+import { EmployeeDetail } from "../modules/hr/entities/employee-detail.entity";
+import { Attendance } from "../modules/hr/entities/attendance.entity";
+import { PayrollRun } from "../modules/hr/entities/payroll-run.entity";
+import { Payslip } from "../modules/hr/entities/payslip.entity";
+import { Ambulance } from "../modules/records/entities/ambulance.entity";
+import { AmbulanceTrip } from "../modules/records/entities/ambulance-trip.entity";
+import { Referral } from "../modules/records/entities/referral.entity";
+import { BirthRecord } from "../modules/records/entities/birth-record.entity";
+import { DeathRecord } from "../modules/records/entities/death-record.entity";
 
 export const entities = [
   Tenant,
@@ -50,6 +60,16 @@ export const entities = [
   InvoiceLine,
   Payment,
   TpaClaim,
+  AuditLog,
+  EmployeeDetail,
+  Attendance,
+  PayrollRun,
+  Payslip,
+  Ambulance,
+  AmbulanceTrip,
+  Referral,
+  BirthRecord,
+  DeathRecord,
 ];
 
 export function typeOrmConfig(config: ConfigService): TypeOrmModuleOptions {

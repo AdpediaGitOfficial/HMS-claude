@@ -10,7 +10,12 @@ import { ClinicalModule } from "./modules/clinical/clinical.module";
 import { PharmacyModule } from "./modules/pharmacy/pharmacy.module";
 import { LabModule } from "./modules/lab/lab.module";
 import { BloodBankModule } from "./modules/records/blood-bank.module";
+import { AmbulanceModule } from "./modules/records/ambulance.module";
+import { ReferralModule } from "./modules/records/referral.module";
+import { VitalRecordsModule } from "./modules/records/vital-records.module";
 import { BillingModule } from "./modules/billing/billing.module";
+import { HrModule } from "./modules/hr/hr.module";
+import { ReportsModule } from "./modules/reports/reports.module";
 import { AuthModule } from "./modules/auth/auth.module";
 
 @Module({
@@ -27,7 +32,12 @@ import { AuthModule } from "./modules/auth/auth.module";
     PharmacyModule,
     LabModule,
     BloodBankModule,
+    AmbulanceModule,
+    ReferralModule,
+    VitalRecordsModule,
     BillingModule,
+    HrModule,
+    ReportsModule,
     AuthModule,
   ],
   providers: [{ provide: APP_INTERCEPTOR, useClass: TenantInterceptor }],
