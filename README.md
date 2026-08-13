@@ -65,15 +65,22 @@ Two steps of the build order (architecture plan §9) are done, end to end
   prescription, charted per encounter) → IPD bed management (wards, beds,
   admit/discharge with a DB-level guarantee that a bed can't be
   double-booked).
+- **Operational modules**: the generic `clinical.orders` spine (§11) that
+  Pharmacy, Lab, and Radiology each fulfil via their own companion table —
+  Pharmacy (stock + dispense against an order, with a stock-on-hand guard),
+  Lab & Radiology (test catalog + order + worklist + report), Blood Bank
+  (inventory by type + issue-to-patient). A doctor places orders directly
+  from the EHR encounter screen; they show up in the relevant module's
+  queue.
 
 The remaining modules in the catalog (`packages/shared/src/modules.ts`) —
-Pharmacy, Lab & Radiology, Blood Bank, Billing & Finance, Insurance/TPA,
-HR & Payroll, Ambulance, Referral, Birth & Death Record — are planned and
-get added the same way: new schema, new entities extending
-`TenantScopedEntity`, new permission rows, new nav entry (automatic, since
-nav is generated from the catalog) — without touching what's already here.
-See §11 of the architecture plan for the extension mechanism this relies
-on (companion tables, never altering an existing module's tables).
+Billing & Finance, Insurance/TPA, HR & Payroll, Ambulance, Referral,
+Birth & Death Record — are planned and get added the same way: new schema,
+new entities extending `TenantScopedEntity`, new permission rows, new nav
+entry (automatic, since nav is generated from the catalog) — without
+touching what's already here. See §11 of the architecture plan for the
+extension mechanism this relies on (companion tables, never altering an
+existing module's tables).
 
 ## Multi-tenancy & security notes
 

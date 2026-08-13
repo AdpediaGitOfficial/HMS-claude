@@ -7,6 +7,9 @@ import { TenantInterceptor } from "./common/tenant/tenant.interceptor";
 import { PlatformModule } from "./modules/platform/platform.module";
 import { CoreModule } from "./modules/core/core.module";
 import { ClinicalModule } from "./modules/clinical/clinical.module";
+import { PharmacyModule } from "./modules/pharmacy/pharmacy.module";
+import { LabModule } from "./modules/lab/lab.module";
+import { BloodBankModule } from "./modules/records/blood-bank.module";
 import { AuthModule } from "./modules/auth/auth.module";
 
 @Module({
@@ -20,6 +23,9 @@ import { AuthModule } from "./modules/auth/auth.module";
     PlatformModule,
     CoreModule,
     ClinicalModule,
+    PharmacyModule,
+    LabModule,
+    BloodBankModule,
     AuthModule,
   ],
   providers: [{ provide: APP_INTERCEPTOR, useClass: TenantInterceptor }],

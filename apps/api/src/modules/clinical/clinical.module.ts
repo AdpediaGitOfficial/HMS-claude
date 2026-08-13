@@ -6,6 +6,7 @@ import { ClinicalNote } from "./entities/clinical-note.entity";
 import { Ward } from "./entities/ward.entity";
 import { Bed } from "./entities/bed.entity";
 import { Admission } from "./entities/admission.entity";
+import { Order } from "./entities/order.entity";
 import { AppointmentsController } from "./appointments/appointments.controller";
 import { AppointmentsService } from "./appointments/appointments.service";
 import { EncountersController } from "./encounters/encounters.controller";
@@ -16,17 +17,27 @@ import { BedsController } from "./ipd/beds.controller";
 import { BedsService } from "./ipd/beds.service";
 import { AdmissionsController } from "./ipd/admissions.controller";
 import { AdmissionsService } from "./ipd/admissions.service";
+import { OrdersController } from "./orders/orders.controller";
+import { OrdersService } from "./orders/orders.service";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Appointment, Encounter, ClinicalNote, Ward, Bed, Admission])],
+  imports: [TypeOrmModule.forFeature([Appointment, Encounter, ClinicalNote, Ward, Bed, Admission, Order])],
   controllers: [
     AppointmentsController,
     EncountersController,
     ClinicalNotesController,
     BedsController,
     AdmissionsController,
+    OrdersController,
   ],
-  providers: [AppointmentsService, EncountersService, ClinicalNotesService, BedsService, AdmissionsService],
-  exports: [TypeOrmModule],
+  providers: [
+    AppointmentsService,
+    EncountersService,
+    ClinicalNotesService,
+    BedsService,
+    AdmissionsService,
+    OrdersService,
+  ],
+  exports: [TypeOrmModule, OrdersService],
 })
 export class ClinicalModule {}

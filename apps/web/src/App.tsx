@@ -9,6 +9,9 @@ import { OpdQueuePage } from "@/pages/OpdQueuePage";
 import { EhrLandingPage } from "@/pages/EhrLandingPage";
 import { EncounterDetailPage } from "@/pages/EncounterDetailPage";
 import { IpdPage } from "@/pages/IpdPage";
+import { PharmacyPage } from "@/pages/PharmacyPage";
+import { LabPage } from "@/pages/LabPage";
+import { BloodBankPage } from "@/pages/BloodBankPage";
 
 function RequireAuth({ children }: { children: React.ReactElement }) {
   const { isAuthenticated } = useAuth();
@@ -52,6 +55,18 @@ function AppRoutes() {
 
       <Route path="/ipd" element={<Section title="IPD" crumb="Home / IPD" />}>
         <Route index element={<IpdPage />} />
+      </Route>
+
+      <Route path="/pharmacy" element={<Section title="Pharmacy" crumb="Home / Pharmacy" />}>
+        <Route index element={<PharmacyPage />} />
+      </Route>
+
+      <Route path="/lab_radiology" element={<Section title="Lab & Radiology" crumb="Home / Lab & Radiology" />}>
+        <Route index element={<LabPage />} />
+      </Route>
+
+      <Route path="/blood_bank" element={<Section title="Blood Bank" crumb="Home / Blood Bank" />}>
+        <Route index element={<BloodBankPage />} />
       </Route>
     </Routes>
   );

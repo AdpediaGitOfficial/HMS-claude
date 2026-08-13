@@ -10,6 +10,9 @@ import { RolePermission } from "../modules/core/entities/role-permission.entity"
 import { UserRole } from "../modules/core/entities/user-role.entity";
 import { Ward } from "../modules/clinical/entities/ward.entity";
 import { Bed } from "../modules/clinical/entities/bed.entity";
+import { StockItem } from "../modules/pharmacy/entities/stock-item.entity";
+import { TestCatalog } from "../modules/lab/entities/test-catalog.entity";
+import { BloodUnit } from "../modules/records/entities/blood-unit.entity";
 
 /**
  * Seeds one demo tenant end-to-end (tenant → branch → permission catalog →
@@ -31,6 +34,19 @@ const PERMISSIONS: Array<{ module: string; action: string; description: string }
   { module: "clinical", action: "ipd.read", description: "View wards, beds, admissions" },
   { module: "clinical", action: "ipd.admit", description: "Admit a patient" },
   { module: "clinical", action: "ipd.discharge", description: "Discharge a patient" },
+  { module: "clinical", action: "orders.read", description: "View orders" },
+  { module: "clinical", action: "orders.create", description: "Place an order" },
+  { module: "pharmacy", action: "stock.read", description: "View pharmacy stock" },
+  { module: "pharmacy", action: "stock.create", description: "Add a stock item" },
+  { module: "pharmacy", action: "dispense.read", description: "View dispense records" },
+  { module: "pharmacy", action: "dispense.create", description: "Dispense medication" },
+  { module: "lab", action: "results.read", description: "View lab/radiology worklist and results" },
+  { module: "lab", action: "results.order", description: "Order a lab/radiology test" },
+  { module: "lab", action: "results.report", description: "Enter a lab/radiology result" },
+  { module: "lab", action: "catalog.create", description: "Add a test to the catalog" },
+  { module: "records", action: "blood_bank.read", description: "View blood bank inventory" },
+  { module: "records", action: "blood_bank.create", description: "Add a blood unit" },
+  { module: "records", action: "blood_bank.issue", description: "Issue a blood unit to a patient" },
 ];
 
 async function main() {
@@ -139,6 +155,57 @@ async function main() {
         const exists = await bedRepo.findOne({ where: { tenantId: tenant.id, wardId: ward.id, label } });
         if (!exists) {
           await bedRepo.save(bedRepo.create({ tenantId: tenant.id, wardId: ward.id, label, status: "available" }));
+        }
+      }
+    }
+
+    // Pharmacy stock, so the dispense queue has something to work against.
+    const stockRepo = manager.getRepository(StockItem);
+    const stockSeed = [
+      { name: "Paracetamol 500mg", unit: "tablet", quantityOnHand: 200, reorderLevel: 40 },
+      { name: "Amoxicillin 250mg", unit: "capsule", quantityOnHand: 15, reorderLevel: 30 },
+      { name: "Normal Saline 500ml", unit: "bottle", quantityOnHand: 60, reorderLevel: 20 },
+    ];
+    for (const s of stockSeed) {
+      const exists = await stockRepo.findOne({ where: { tenantId: tenant.id, name: s.name } });
+      if (!exists) await stockRepo.save(stockRepo.create({ ...s, tenantId: tenant.id }));
+    }
+
+    // Lab/radiology test catalog.
+    const testRepo = manager.getRepository(TestCatalog);
+    const testSeed: Array<{ name: string; category: "lab" | "radiology" }> = [
+      { name: "CBC", category: "lab" },
+      { name: "Blood Glucose (Fasting)", category: "lab" },
+      { name: "Chest X-Ray", category: "radiology" },
+    ];
+    for (const t of testSeed) {
+      const exists = await testRepo.findOne({ where: { tenantId: tenant.id, name: t.name } });
+      if (!exists) await testRepo.save(testRepo.create({ ...t, tenantId: tenant.id }));
+    }
+
+    // A few blood units so the inventory grid isn't empty on first login.
+    const bloodRepo = manager.getRepository(BloodUnit);
+    const bloodSeed: Array<{ bloodType: string; count: number }> = [
+      { bloodType: "O+", count: 6 },
+      { bloodType: "A+", count: 4 },
+      { bloodType: "B+", count: 2 },
+      { bloodType: "AB-", count: 0 },
+    ];
+    const existingUnits = await bloodRepo.count({ where: { tenantId: tenant.id } });
+    if (existingUnits === 0) {
+      const now = new Date();
+      const expires = new Date(now.getTime() + 42 * 24 * 60 * 60 * 1000);
+      for (const b of bloodSeed) {
+        for (let i = 0; i < b.count; i++) {
+          await bloodRepo.save(
+            bloodRepo.create({
+              tenantId: tenant.id,
+              bloodType: b.bloodType as BloodUnit["bloodType"],
+              status: "available",
+              collectedAt: now,
+              expiresAt: expires,
+            }),
+          );
         }
       }
     }

@@ -27,6 +27,24 @@ interface ClinicalNote {
   notes?: string;
   createdAt: string;
 }
+interface Order {
+  id: string;
+  orderType: "pharmacy" | "lab" | "radiology";
+  status: "pending" | "in_progress" | "completed" | "cancelled";
+  orderedAt: string;
+}
+interface TestCatalogItem {
+  id: string;
+  name: string;
+  category: "lab" | "radiology";
+}
+
+const ORDER_TONE: Record<Order["status"], "warning" | "success" | "neutral" | "critical"> = {
+  pending: "warning",
+  in_progress: "warning",
+  completed: "success",
+  cancelled: "critical",
+};
 
 export function EncounterDetailPage() {
   const { encounterId } = useParams<{ encounterId: string }>();
@@ -35,6 +53,9 @@ export function EncounterDetailPage() {
   const [encounter, setEncounter] = React.useState<Encounter | null>(null);
   const [patient, setPatient] = React.useState<Patient | null>(null);
   const [notes, setNotes] = React.useState<ClinicalNote[]>([]);
+  const [orders, setOrders] = React.useState<Order[]>([]);
+  const [testCatalog, setTestCatalog] = React.useState<TestCatalogItem[]>([]);
+  const [selectedTest, setSelectedTest] = React.useState("");
   const [loading, setLoading] = React.useState(true);
 
   const [temp, setTemp] = React.useState("");
@@ -49,12 +70,16 @@ export function EncounterDetailPage() {
     setLoading(true);
     const enc = await api<Encounter>(`/encounters/${encounterId}`);
     setEncounter(enc);
-    const [pts, encNotes] = await Promise.all([
+    const [pts, encNotes, encOrders, tests] = await Promise.all([
       api<Patient[]>("/patients"),
       api<ClinicalNote[]>(`/clinical-notes/by-encounter/${encounterId}`),
+      api<Order[]>(`/orders/by-encounter/${encounterId}`),
+      api<TestCatalogItem[]>("/lab/catalog"),
     ]);
     setPatient(pts.find((p) => p.id === enc.patientId) ?? null);
     setNotes(encNotes);
+    setOrders(encOrders);
+    setTestCatalog(tests);
     setLoading(false);
   }, [encounterId]);
 
@@ -80,6 +105,23 @@ export function EncounterDetailPage() {
     setDiagnosis("");
     setPrescription("");
     setFreeNotes("");
+    load();
+  }
+
+  async function onOrderMedication() {
+    if (!encounterId) return;
+    await api("/orders", { method: "POST", body: JSON.stringify({ encounterId, orderType: "pharmacy" }) });
+    load();
+  }
+
+  async function onOrderTest(e: React.FormEvent) {
+    e.preventDefault();
+    if (!encounterId || !selectedTest) return;
+    await api("/lab/results/order", {
+      method: "POST",
+      body: JSON.stringify({ encounterId, testCatalogId: selectedTest }),
+    });
+    setSelectedTest("");
     load();
   }
 
@@ -111,6 +153,46 @@ export function EncounterDetailPage() {
           <Button variant="danger" onClick={onCloseEncounter}>
             Close encounter
           </Button>
+        )}
+      </div>
+
+      <div className="rounded-lg border border-border bg-surface p-5 shadow-card">
+        <h3 className="mb-4 text-[13.5px] font-bold">Orders</h3>
+        <div className="mb-4 flex flex-col gap-2">
+          {orders.length === 0 && <p className="text-[13px] text-text-muted">No orders placed yet.</p>}
+          {orders.map((o) => (
+            <div key={o.id} className="flex items-center justify-between rounded-sm bg-surface-2 px-3 py-2">
+              <span className="text-[13px] font-semibold capitalize">{o.orderType}</span>
+              <Badge tone={ORDER_TONE[o.status]}>{o.status.replace("_", " ")}</Badge>
+            </div>
+          ))}
+        </div>
+        {encounter.status === "in_progress" && (
+          <div className="flex flex-wrap items-end gap-3">
+            <Button variant="secondary" onClick={onOrderMedication}>
+              Order medication
+            </Button>
+            <form onSubmit={onOrderTest} className="flex items-end gap-2">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-semibold text-text-muted">Order lab / radiology test</label>
+                <select
+                  value={selectedTest}
+                  onChange={(e) => setSelectedTest(e.target.value)}
+                  className="rounded-sm border border-border-strong bg-surface px-2.5 py-2 text-sm"
+                >
+                  <option value="">Select test…</option>
+                  {testCatalog.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} ({t.category})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button type="submit" variant="secondary" disabled={!selectedTest}>
+                Order
+              </Button>
+            </form>
+          </div>
         )}
       </div>
 

@@ -14,6 +14,12 @@ import { ClinicalNote } from "../modules/clinical/entities/clinical-note.entity"
 import { Ward } from "../modules/clinical/entities/ward.entity";
 import { Bed } from "../modules/clinical/entities/bed.entity";
 import { Admission } from "../modules/clinical/entities/admission.entity";
+import { Order } from "../modules/clinical/entities/order.entity";
+import { StockItem } from "../modules/pharmacy/entities/stock-item.entity";
+import { DispenseRecord } from "../modules/pharmacy/entities/dispense-record.entity";
+import { TestCatalog } from "../modules/lab/entities/test-catalog.entity";
+import { TestResult } from "../modules/lab/entities/test-result.entity";
+import { BloodUnit } from "../modules/records/entities/blood-unit.entity";
 
 export const entities = [
   Tenant,
@@ -30,6 +36,12 @@ export const entities = [
   Ward,
   Bed,
   Admission,
+  Order,
+  StockItem,
+  DispenseRecord,
+  TestCatalog,
+  TestResult,
+  BloodUnit,
 ];
 
 export function typeOrmConfig(config: ConfigService): TypeOrmModuleOptions {
