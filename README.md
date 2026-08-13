@@ -101,6 +101,113 @@ currently coarse — every seeded demo user holds the `admin` role rather
 than the fine-grained role → permission subsets described in §5 of the
 architecture plan.
 
+## Deploy to a live server
+
+Production topology differs from local dev in three ways: everything runs
+from compiled output (no `ts-node`/dev dependencies in the runtime images),
+Postgres/Redis are never exposed on a public port, and **Caddy** is the one
+public-facing container — it serves the built React app and reverse-proxies
+`/api/*` to the internal API, obtaining and renewing HTTPS certificates
+automatically once you point a domain at it (no Nginx/certbot setup needed).
+
+```
+Internet ──▶ Caddy (web, :80/:443) ──▶ /api/*  → api (internal only, :3000) → postgres (internal only)
+                     │                                                      → redis (internal only)
+                     └── everything else → React static build
+```
+
+You can test immediately against the server's bare IP over plain HTTP, then
+switch to a real domain with automatic HTTPS later — same containers, one
+env var change.
+
+### 1. Provision a server
+
+Any VM with a public IP works (2 vCPU / 4 GB RAM is comfortable to start).
+Point a domain's DNS `A` record at it now if you have one — you can also
+add this later. Open ports **80** and **443** in the firewall/security
+group; nothing else needs to be public.
+
+### 2. Install Docker
+
+```bash
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER && newgrp docker
+```
+
+### 3. Clone the repo and check out the branch
+
+```bash
+git clone https://github.com/AdpediaGitOfficial/HMS-claude.git
+cd HMS-claude
+git checkout claude/hospital-erp-architecture-ly660l
+```
+
+### 4. Configure environment
+
+```bash
+cp .env.prod.example .env.prod
+```
+
+Edit `.env.prod`:
+
+- `POSTGRES_PASSWORD` — generate with `openssl rand -base64 24`
+- `JWT_SECRET` — generate with `openssl rand -base64 48`
+- `WEB_ORIGIN` — `http://SERVER_IP` for now (or `https://yourdomain.com`
+  once you have one)
+- `DOMAIN` — leave as `:80` to test over the bare IP now; set to
+  `yourdomain.com` once its DNS points here, for automatic HTTPS
+
+### 5. Build and start the stack
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+```
+
+### 6. Run migrations and seed a demo tenant (one-time)
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec api pnpm migration:run:prod
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec api pnpm seed:prod
+```
+
+The seed command prints a `tenantId` and demo login
+(`admin@sunrise.test` / `ChangeMe123!`) — save that output, you'll need the
+`tenantId` to log in.
+
+### 7. Verify
+
+Visit `http://SERVER_IP` (or your domain) and log in with the tenant ID +
+credentials from step 6. You should land on the dashboard with the full
+module suite in the sidebar.
+
+```bash
+# tail logs if something looks wrong
+docker compose --env-file .env.prod -f docker-compose.prod.yml logs -f api
+```
+
+### 8. Switch on HTTPS with a real domain (whenever you're ready)
+
+Point the domain's DNS `A` record at the server, then:
+
+```bash
+sed -i 's/^DOMAIN=.*/DOMAIN=yourdomain.com/' .env.prod
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d
+```
+
+Caddy detects the change, requests a Let's Encrypt certificate for the
+domain, and starts serving HTTPS — no other change needed.
+
+### Shipping further updates
+
+Once the live test above is good, later changes ship the same way:
+
+```bash
+git pull
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+# only if the update includes new migrations:
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec api pnpm migration:run:prod
+```
+
 ## Multi-tenancy & security notes
 
 - Every tenant-owned table carries `tenant_id` and a Postgres RLS policy

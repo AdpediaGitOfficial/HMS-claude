@@ -1,0 +1,20 @@
+# Production image — builds the static React bundle, then ships it from a
+# Caddy container that also reverse-proxies /api/* to the internal api
+# service (see Caddyfile) and terminates TLS automatically via Let's Encrypt.
+
+FROM node:20-alpine AS builder
+RUN corepack enable
+WORKDIR /app
+COPY package.json pnpm-workspace.yaml ./
+COPY apps/web/package.json apps/web/package.json
+COPY packages/shared/package.json packages/shared/package.json
+RUN pnpm install --frozen-lockfile --filter @hms/web...
+
+COPY packages/shared packages/shared
+COPY apps/web apps/web
+WORKDIR /app/apps/web
+RUN pnpm build
+
+FROM caddy:2-alpine
+COPY Caddyfile /etc/caddy/Caddyfile
+COPY --from=builder /app/apps/web/dist /srv

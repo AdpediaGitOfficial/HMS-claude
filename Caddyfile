@@ -1,0 +1,24 @@
+# Production reverse proxy + static file server.
+#
+# DOMAIN (env var, see .env.prod.example) defaults to ":80" — Caddy address
+# syntax for "any host, HTTP only" — so a first deploy works immediately
+# against a bare server IP, no domain required. Once you have a domain
+# pointed at the server, set DOMAIN=yourdomain.com in .env.prod and
+# restart: Caddy will automatically obtain and renew a Let's Encrypt
+# certificate and switch to HTTPS, with no other config change.
+{$DOMAIN} {
+	# Mirrors the Vite dev proxy (apps/web/vite.config.ts): strip the /api
+	# prefix and forward to the internal api service. The web app's fetch
+	# wrapper (apps/web/src/lib/api.ts) always calls `/api${path}`, so this
+	# is the only place dev vs. prod routing differs — no frontend code
+	# changes needed between environments.
+	handle_path /api/* {
+		reverse_proxy api:3000
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

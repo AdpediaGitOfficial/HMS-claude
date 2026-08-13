@@ -1,0 +1,65 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hms
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: hms
+    # No published port — only reachable by other containers on this
+    # compose network. Never expose the database directly to the internet.
+    volumes:
+      - hms_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hms"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # No published port — internal only, same reasoning as postgres above.
+    volumes:
+      - hms_redis_data:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.prod
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://hms:${POSTGRES_PASSWORD}@postgres:5432/hms
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      WEB_ORIGIN: ${WEB_ORIGIN}
+    # No published port — only reachable from the web/Caddy container,
+    # which reverse-proxies /api/* to it (see Caddyfile). The API is never
+    # exposed on the public internet directly.
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.prod
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      DOMAIN: ${DOMAIN:-:80}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - hms_caddy_data:/data
+      - hms_caddy_config:/config
+
+volumes:
+  hms_postgres_data:
+  hms_redis_data:
+  hms_caddy_data:
+  hms_caddy_config:
