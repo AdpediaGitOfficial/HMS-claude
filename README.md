@@ -20,39 +20,29 @@ reference this scaffold implements.
 apps/api/       NestJS backend (schema-per-module: platform, core, clinical, ...)
 apps/web/       React frontend
 packages/shared/ Module catalog + role→module matrix (single source of truth)
-docker-compose.yml
+deploy/         Nginx site config template for production
+ecosystem.config.js  pm2 process definition for the API in production
 ```
 
 ## Run locally
 
-**Option A — Docker Compose (Postgres + Redis + API + Web):**
-
-```bash
-docker compose up
-```
-
-Then run migrations and seed a demo tenant (one-time):
-
-```bash
-docker compose exec api pnpm migration:run
-docker compose exec api pnpm seed
-```
-
-The seed command prints a `tenantId`, plus a demo login
-(`admin@sunrise.test` / `ChangeMe123!`) — use those on the login screen at
-http://localhost:5173.
-
-**Option B — run natively:**
+Everything runs as plain Node processes — no containers. Install Postgres
+16+ and Redis however you like (a package manager, an existing local
+instance, whatever's already on your machine), then:
 
 ```bash
 pnpm install
-docker compose up -d postgres redis   # just the datastores
-cp apps/api/.env.example apps/api/.env
+createdb hms                          # or: psql -c "CREATE DATABASE hms"
+cp apps/api/.env.example apps/api/.env  # edit DATABASE_URL if needed
 pnpm --filter @hms/api migration:run
 pnpm --filter @hms/api seed
 pnpm dev:api     # http://localhost:3000
 pnpm dev:web     # http://localhost:5173
 ```
+
+The seed command prints a `tenantId`, plus a demo login
+(`admin@sunrise.test` / `ChangeMe123!`) — use those on the login screen at
+http://localhost:5173.
 
 ## What's implemented
 
@@ -103,109 +93,139 @@ architecture plan.
 
 ## Deploy to a live server
 
-Production topology differs from local dev in three ways: everything runs
-from compiled output (no `ts-node`/dev dependencies in the runtime images),
-Postgres/Redis are never exposed on a public port, and **Caddy** is the one
-public-facing container — it serves the built React app and reverse-proxies
-`/api/*` to the internal API, obtaining and renewing HTTPS certificates
-automatically once you point a domain at it (no Nginx/certbot setup needed).
+No containers in production either — the API runs as a plain Node process
+under **pm2** (auto-restart on crash/reboot), Postgres and Redis are native
+packages on the same box, and **Nginx** serves the built React app and
+reverse-proxies `/api/*` to the API, with **certbot** handling HTTPS.
 
 ```
-Internet ──▶ Caddy (web, :80/:443) ──▶ /api/*  → api (internal only, :3000) → postgres (internal only)
-                     │                                                      → redis (internal only)
-                     └── everything else → React static build
+Internet ──▶ Nginx (:80/:443) ──▶ /api/*  → hms-api (pm2, 127.0.0.1:3000) → postgres (localhost)
+                    │                                                     → redis (localhost)
+                    └── everything else → apps/web/dist (static files)
 ```
-
-You can test immediately against the server's bare IP over plain HTTP, then
-switch to a real domain with automatic HTTPS later — same containers, one
-env var change.
 
 ### 1. Provision a server
 
 Any VM with a public IP works (2 vCPU / 4 GB RAM is comfortable to start).
 Point a domain's DNS `A` record at it now if you have one — you can also
-add this later. Open ports **80** and **443** in the firewall/security
-group; nothing else needs to be public.
+add HTTPS later. Open ports **80** and **443** in the firewall/security
+group; nothing else needs to be public (Postgres/Redis/the API stay bound
+to localhost).
 
-### 2. Install Docker
-
-```bash
-curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker $USER && newgrp docker
-```
-
-### 3. Clone the repo and check out the branch
+### 2. Install dependencies
 
 ```bash
-git clone https://github.com/AdpediaGitOfficial/HMS-claude.git
-cd HMS-claude
-git checkout claude/hospital-erp-architecture-ly660l
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs postgresql redis-server nginx certbot python3-certbot-nginx
+sudo corepack enable
+sudo npm install -g pm2
 ```
 
-### 4. Configure environment
+### 3. Set up Postgres
 
 ```bash
-cp .env.prod.example .env.prod
+sudo -u postgres createuser hms --pwprompt   # set a strong password when prompted
+sudo -u postgres createdb hms --owner=hms
 ```
 
-Edit `.env.prod`:
+Postgres and Redis are already localhost-only by default on a fresh
+install — no config changes needed to keep them off the public internet.
 
-- `POSTGRES_PASSWORD` — generate with `openssl rand -base64 24`
+### 4. Clone the repo and check out the branch
+
+```bash
+sudo mkdir -p /opt/hms && sudo chown $USER /opt/hms
+git clone https://github.com/AdpediaGitOfficial/HMS-claude.git /opt/hms
+cd /opt/hms
+git checkout claude/hms-native-deploy
+```
+
+### 5. Configure environment
+
+```bash
+cp apps/api/.env.example apps/api/.env
+```
+
+Edit `apps/api/.env`:
+
+- `NODE_ENV=production`
+- `DATABASE_URL` — `postgres://hms:YOUR_PASSWORD@localhost:5432/hms`
 - `JWT_SECRET` — generate with `openssl rand -base64 48`
 - `WEB_ORIGIN` — `http://SERVER_IP` for now (or `https://yourdomain.com`
   once you have one)
-- `DOMAIN` — leave as `:80` to test over the bare IP now; set to
-  `yourdomain.com` once its DNS points here, for automatic HTTPS
 
-### 5. Build and start the stack
+### 6. Build
 
 ```bash
-docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+pnpm install
+pnpm -r build
 ```
 
-### 6. Run migrations and seed a demo tenant (one-time)
+### 7. Run migrations and seed a demo tenant (one-time)
 
 ```bash
-docker compose --env-file .env.prod -f docker-compose.prod.yml exec api pnpm migration:run:prod
-docker compose --env-file .env.prod -f docker-compose.prod.yml exec api pnpm seed:prod
+pnpm --filter @hms/api migration:run:prod
+pnpm --filter @hms/api seed:prod
 ```
 
 The seed command prints a `tenantId` and demo login
 (`admin@sunrise.test` / `ChangeMe123!`) — save that output, you'll need the
 `tenantId` to log in.
 
-### 7. Verify
-
-Visit `http://SERVER_IP` (or your domain) and log in with the tenant ID +
-credentials from step 6. You should land on the dashboard with the full
-module suite in the sidebar.
+### 8. Start the API with pm2
 
 ```bash
-# tail logs if something looks wrong
-docker compose --env-file .env.prod -f docker-compose.prod.yml logs -f api
+pm2 start ecosystem.config.js
+pm2 save
+pm2 startup   # follow the printed command to enable pm2 on boot
 ```
 
-### 8. Switch on HTTPS with a real domain (whenever you're ready)
-
-Point the domain's DNS `A` record at the server, then:
+### 9. Configure Nginx
 
 ```bash
-sed -i 's/^DOMAIN=.*/DOMAIN=yourdomain.com/' .env.prod
-docker compose --env-file .env.prod -f docker-compose.prod.yml up -d
+sudo cp deploy/nginx.hms.conf.example /etc/nginx/sites-available/hms
+sudo sed -i 's/your-domain-or-server-ip/SERVER_IP_OR_DOMAIN/' /etc/nginx/sites-available/hms
+sudo ln -s /etc/nginx/sites-available/hms /etc/nginx/sites-enabled/hms
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Caddy detects the change, requests a Let's Encrypt certificate for the
-domain, and starts serving HTTPS — no other change needed.
+### 10. Verify
+
+Visit `http://SERVER_IP` and log in with the tenant ID + credentials from
+step 7. You should land on the dashboard with the full module suite in the
+sidebar.
+
+```bash
+pm2 logs hms-api   # tail API logs if something looks wrong
+```
+
+### 11. Switch on HTTPS with a real domain (whenever you're ready)
+
+Point the domain's DNS `A` record at the server, put that domain in place
+of the IP in `/etc/nginx/sites-available/hms` (`server_name`), reload
+Nginx, then:
+
+```bash
+sudo certbot --nginx -d yourdomain.com
+```
+
+certbot obtains a Let's Encrypt certificate, edits the Nginx config to add
+the HTTPS server block + HTTP→HTTPS redirect, and sets up auto-renewal —
+no further action needed. Update `WEB_ORIGIN` in `apps/api/.env` to
+`https://yourdomain.com` and restart the API (`pm2 restart hms-api`).
 
 ### Shipping further updates
 
 Once the live test above is good, later changes ship the same way:
 
 ```bash
+cd /opt/hms
 git pull
-docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
-# only if the update includes new migrations:
-docker compose --env-file .env.prod -f docker-compose.prod.yml exec api pnpm migration:run:prod
+pnpm install
+pnpm -r build
+pnpm --filter @hms/api migration:run:prod   # only if the update includes new migrations
+pm2 restart hms-api
 ```
 
 ## Multi-tenancy & security notes

@@ -1,0 +1,35 @@
+# Nginx site config for HMS. Copy to /etc/nginx/sites-available/hms,
+# symlink into sites-enabled, then run `certbot --nginx` against it (see
+# README.md "Deploy to a live server") — certbot edits this file in place
+# to add the HTTPS server block and HTTP->HTTPS redirect, so this file
+# only needs to define the plain-HTTP version below.
+#
+# Adjust server_name and root if you cloned the repo somewhere other than
+# /opt/hms.
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name your-domain-or-server-ip;
+
+    root /opt/hms/apps/web/dist;
+    index index.html;
+
+    # Mirrors the Vite dev proxy (apps/web/vite.config.ts): strip the /api
+    # prefix and forward to the API process pm2 keeps running on :3000.
+    # The web app's fetch wrapper (apps/web/src/lib/api.ts) always calls
+    # `/api${path}`, so this is the only place dev vs. prod routing
+    # differs — no frontend code changes needed between environments.
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        try_files $uri /index.html;
+    }
+}
