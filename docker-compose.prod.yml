@@ -39,8 +39,13 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       WEB_ORIGIN: ${WEB_ORIGIN}
     # No published port — only reachable from the web/Caddy container,
-    # which reverse-proxies /api/* to it (see Caddyfile). The API is never
-    # exposed on the public internet directly.
+    # which reverse-proxies /api/* and /uploads/* to it (see Caddyfile).
+    # The API is never exposed on the public internet directly.
+    volumes:
+      # Uploaded files (e.g. patient photos) must survive `up -d --build` —
+      # without a named volume here they'd live in the container's
+      # writable layer and vanish on every redeploy.
+      - hms_uploads_data:/app/apps/api/uploads
 
   web:
     build:
@@ -63,3 +68,4 @@ volumes:
   hms_redis_data:
   hms_caddy_data:
   hms_caddy_config:
+  hms_uploads_data:

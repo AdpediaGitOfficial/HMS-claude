@@ -12,6 +12,7 @@ import { Ward } from "../modules/clinical/entities/ward.entity";
 import { Bed } from "../modules/clinical/entities/bed.entity";
 import { StockItem } from "../modules/pharmacy/entities/stock-item.entity";
 import { TestCatalog } from "../modules/lab/entities/test-catalog.entity";
+import { TpaProvider } from "../modules/billing/entities/tpa-provider.entity";
 import { BloodUnit } from "../modules/records/entities/blood-unit.entity";
 import { EmployeeDetail } from "../modules/hr/entities/employee-detail.entity";
 import { Ambulance } from "../modules/records/entities/ambulance.entity";
@@ -25,6 +26,7 @@ import { Ambulance } from "../modules/records/entities/ambulance.entity";
 const PERMISSIONS: Array<{ module: string; action: string; description: string }> = [
   { module: "core", action: "patients.read", description: "View patients" },
   { module: "core", action: "patients.create", description: "Register a patient" },
+  { module: "core", action: "patients.update", description: "Edit a patient's details" },
   { module: "core", action: "users.read", description: "View staff directory" },
   { module: "clinical", action: "appointments.read", description: "View appointments" },
   { module: "clinical", action: "appointments.create", description: "Book an appointment" },
@@ -57,6 +59,8 @@ const PERMISSIONS: Array<{ module: string; action: string; description: string }
   { module: "billing", action: "tpa_claims.read", description: "View insurance/TPA claims" },
   { module: "billing", action: "tpa_claims.create", description: "Submit an insurance/TPA claim" },
   { module: "billing", action: "tpa_claims.update", description: "Approve/reject/settle a claim" },
+  { module: "billing", action: "tpa_providers.read", description: "View the TPA/insurer catalog" },
+  { module: "billing", action: "tpa_providers.create", description: "Add a TPA/insurer to the catalog" },
   { module: "reports", action: "summary.read", description: "View the reports dashboard" },
   { module: "reports", action: "audit.read", description: "View the audit log" },
   { module: "hr", action: "employees.read", description: "View staff/employee records" },
@@ -208,6 +212,14 @@ async function main() {
     for (const t of testSeed) {
       const exists = await testRepo.findOne({ where: { tenantId: tenant.id, name: t.name } });
       if (!exists) await testRepo.save(testRepo.create({ ...t, tenantId: tenant.id }));
+    }
+
+    // TPA/insurer catalog, so the Add Patient form's TPA select isn't empty.
+    const tpaProviderRepo = manager.getRepository(TpaProvider);
+    const tpaProviderSeed = ["Star Health Insurance", "ICICI Lombard", "Bajaj Allianz General Insurance"];
+    for (const name of tpaProviderSeed) {
+      const exists = await tpaProviderRepo.findOne({ where: { tenantId: tenant.id, name } });
+      if (!exists) await tpaProviderRepo.save(tpaProviderRepo.create({ tenantId: tenant.id, name }));
     }
 
     // A few blood units so the inventory grid isn't empty on first login.

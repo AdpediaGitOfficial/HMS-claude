@@ -4,17 +4,20 @@ import { Invoice } from "./entities/invoice.entity";
 import { InvoiceLine } from "./entities/invoice-line.entity";
 import { Payment } from "./entities/payment.entity";
 import { TpaClaim } from "./entities/tpa-claim.entity";
+import { TpaProvider } from "./entities/tpa-provider.entity";
 import { InvoicesController } from "./invoices/invoices.controller";
 import { InvoicesService } from "./invoices/invoices.service";
 import { PaymentsController } from "./payments/payments.controller";
 import { PaymentsService } from "./payments/payments.service";
 import { TpaClaimsController } from "./tpa-claims/tpa-claims.controller";
 import { TpaClaimsService } from "./tpa-claims/tpa-claims.service";
+import { TpaProvidersController } from "./tpa-providers/tpa-providers.controller";
+import { TpaProvidersService } from "./tpa-providers/tpa-providers.service";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Invoice, InvoiceLine, Payment, TpaClaim])],
-  controllers: [InvoicesController, PaymentsController, TpaClaimsController],
-  providers: [InvoicesService, PaymentsService, TpaClaimsService],
+  imports: [TypeOrmModule.forFeature([Invoice, InvoiceLine, Payment, TpaClaim, TpaProvider])],
+  controllers: [InvoicesController, PaymentsController, TpaClaimsController, TpaProvidersController],
+  providers: [InvoicesService, PaymentsService, TpaClaimsService, TpaProvidersService],
   exports: [TypeOrmModule],
 })
 export class BillingModule {}

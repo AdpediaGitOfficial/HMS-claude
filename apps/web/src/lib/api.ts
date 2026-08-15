@@ -34,3 +34,26 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   }
   return res.json() as Promise<T>;
 }
+
+/**
+ * Multipart upload — deliberately doesn't set Content-Type itself (the
+ * browser fills in the multipart boundary), unlike `api()` above which
+ * always sends JSON.
+ */
+export async function uploadFile<T>(path: string, file: File): Promise<T> {
+  const token = getToken();
+  const form = new FormData();
+  form.append("file", file);
+
+  const res = await fetch(`/api${path}`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: form,
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(body.message ?? `Upload failed: ${res.status}`);
+  }
+  return res.json() as Promise<T>;
+}

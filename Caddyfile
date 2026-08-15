@@ -16,6 +16,12 @@
 		reverse_proxy api:3000
 	}
 
+	# Uploaded files (e.g. patient photos) are served by the API itself
+	# outside the /api prefix — same reasoning as the Vite dev proxy above.
+	handle /uploads/* {
+		reverse_proxy api:3000
+	}
+
 	handle {
 		root * /srv
 		try_files {path} /index.html

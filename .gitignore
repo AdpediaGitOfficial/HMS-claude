@@ -10,3 +10,4 @@ coverage/
 .turbo/
 pnpm-lock.yaml.bak
 *.tsbuildinfo
+apps/api/uploads/

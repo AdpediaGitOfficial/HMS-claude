@@ -1,8 +1,10 @@
 import { IsDateString, IsEmail, IsOptional, IsString, IsUUID } from "class-validator";
 
-export class CreatePatientDto {
+/** Every field optional — a PATCH only sends what changed. TPA consistency (tpaId/tpaValidity require a tpaProviderId) is validated in PatientsService against the merged (existing + patch) state, not the patch alone. */
+export class UpdatePatientDto {
+  @IsOptional()
   @IsString()
-  name!: string;
+  name?: string;
 
   @IsOptional()
   @IsDateString()
@@ -52,7 +54,6 @@ export class CreatePatientDto {
   @IsString()
   allergies?: string;
 
-  /** Must reference an existing row in billing.tpa_providers for this tenant — validated in PatientsService, not just the DB FK, so the caller gets a clean 400 instead of a constraint-violation 500. */
   @IsOptional()
   @IsUUID()
   tpaProviderId?: string | null;

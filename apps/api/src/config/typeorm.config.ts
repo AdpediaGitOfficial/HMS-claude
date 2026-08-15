@@ -24,6 +24,7 @@ import { Invoice } from "../modules/billing/entities/invoice.entity";
 import { InvoiceLine } from "../modules/billing/entities/invoice-line.entity";
 import { Payment } from "../modules/billing/entities/payment.entity";
 import { TpaClaim } from "../modules/billing/entities/tpa-claim.entity";
+import { TpaProvider } from "../modules/billing/entities/tpa-provider.entity";
 import { AuditLog } from "../modules/core/entities/audit-log.entity";
 import { EmployeeDetail } from "../modules/hr/entities/employee-detail.entity";
 import { Attendance } from "../modules/hr/entities/attendance.entity";
@@ -60,6 +61,7 @@ export const entities = [
   InvoiceLine,
   Payment,
   TpaClaim,
+  TpaProvider,
   AuditLog,
   EmployeeDetail,
   Attendance,
